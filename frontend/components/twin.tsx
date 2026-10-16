@@ -99,7 +99,7 @@ export default function Twin() {
                     <Bot className="w-6 h-6" />
                     PersonaAI
                 </h2>
-                <p className="text-sm text-slate-300 mt-1">Your AI course companion</p>
+                <p className="text-sm text-slate-300 mt-1">Your personal AI-powered assistant</p>
             </div>
 
             {/* Messages */}
