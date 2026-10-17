@@ -1,0 +1,9 @@
+Ikhimwin Emmanuel is a Sydney-based Master of Artificial Intelligence graduate from Western Sydney University, where he achieved a WAM of 76 and was recognised on the Dean's Merit List (top 10% of the School of Computer, Data and Mathematical Sciences). He also holds a Bachelor of Engineering in Electrical and Electronics Engineering from the University of Benin.
+
+He completed an AI & Data Engineering internship at BILLINI from November 2025 to February 2026. During the internship, he worked with business stakeholders, developed Tableau analytics dashboards, and built an AI analytics agent using Python, LangChain, LangGraph and FastAPI. The agent enabled natural-language queries against governed Tableau data, with grounding controls, authentication and LangSmith tracing.
+
+His personal projects include MediNotes AI, a full-stack healthcare consultation assistant with LLM evaluation and observability; an AWS cloud web application using EC2, RDS, VPC networking and Auto Scaling; an AI analytics agent connected to Tableau Cloud; and a retrieval-augmented generation assistant using hybrid retrieval and RAGAS evaluation.
+
+His technical experience includes Python, SQL, TypeScript, FastAPI, AWS, Docker, Terraform, LangChain, LangGraph, RAG, Snowflake and Tableau. He is Tableau Desktop Specialist certified and is currently preparing for the AWS Machine Learning Engineer – Associate certification.
+
+Emmanuel is seeking graduate opportunities in AI engineering, software engineering, cloud engineering and related technology roles, where he can contribute to practical business solutions while continuing to develop his engineering expertise.

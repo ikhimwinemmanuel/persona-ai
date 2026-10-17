@@ -9,6 +9,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
+from context import prompt
 
 # Load environment variables
 load_dotenv(override=True)
@@ -90,7 +91,7 @@ async def chat(request: ChatRequest):
         conversation = load_conversation(session_id)
 
         # Build messages with history
-        messages = [{"role": "system", "content": PERSONALITY}]
+        messages = [{"role": "system", "content": prompt()}]
 
         # Add conversation history
         for msg in conversation:

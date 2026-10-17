@@ -1,0 +1,37 @@
+
+{
+    "full_name": "Ikhimwin Emmanuel",
+    "name": "Emmanuel",
+    "location": "Sydney, Australia",
+    "professional_title": "AI & Data Engineer",
+    "github": "https://github.com/ikhimwinemmanuel",
+    "linkedin": "https://www.linkedin.com/in/emmanuel-ikhimwin-aa311a244/",
+    "portfolio": "https://ikhimwinemmanuel.github.io/",
+    "awards": [
+      {
+        "name": "Dean's Merit List",
+        "institution": "Western Sydney University",
+        "description": "Recognised among the top 10% of students in the School of Computer, Data and Mathematical Sciences."
+      },
+      {
+        "name": "Best People Award for Sustainability",
+        "institution": "P-FAT Solar Services"
+      }
+    ],
+    "contact": {
+      "preferred_method": "Portfolio contact form",
+      "url": "https://ikhimwinemmanuel.github.io/"
+    },
+    "projects": [
+  {
+    "name": "PersonaAI",
+    "type": "Personalised AI chatbot",
+    "creator": "Ikhimwin Emmanuel",
+    "description": "A full-stack AI assistant developed by Emmanuel to answer questions about his professional background, technical skills, and projects.",
+    "technologies": ["Next.js", "TypeScript", "Python", "FastAPI", "OpenAI API"],
+    "github": "https://github.com/ikhimwinemmanuel/persona-ai",
+    "status": "In development"
+  }
+]
+  }
+  
