@@ -10,6 +10,12 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from context import prompt
+import boto3 #AWS sdk for python
+from botocore.exceptions import ClientError # Error handling for AWS S3
+
+
+
+
 
 # Load environment variables
 load_dotenv(override=True)
@@ -29,9 +35,16 @@ app.add_middleware(
 # Initialize OpenAI client
 client = OpenAI()
 
-# Memory directory
-MEMORY_DIR = Path("../memory")
-MEMORY_DIR.mkdir(exist_ok=True)
+# Conversation storage configuration
+USE_S3 = os.getenv("USE_S3", "false").lower() == "true"
+S3_BUCKET = os.getenv("S3_BUCKET")
+
+MEMORY_DIR = Path(__file__).resolve().parent.parent / "memory"
+
+if not USE_S3:
+    MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+
+s3 = boto3.client("s3") if USE_S3 else None
 
 
 # Load personality details
@@ -44,20 +57,67 @@ PERSONALITY = load_personality()
 
 
 # Memory functions
+
 def load_conversation(session_id: str) -> List[Dict]:
-    """Load conversation history from file"""
+    """Load conversation history from local storage or S3."""
+
+    if USE_S3:
+        if not S3_BUCKET:
+            raise RuntimeError("S3_BUCKET is not configured")
+
+        object_key = f"sessions/{session_id}.json"
+
+        try:
+            response = s3.get_object(
+                Bucket=S3_BUCKET,
+                Key=object_key
+            )
+
+            content = response["Body"].read().decode("utf-8")
+            return json.loads(content)
+
+        except ClientError as error:
+            error_code = error.response["Error"]["Code"]
+
+            if error_code in ("NoSuchKey", "404"):
+                return []
+
+            raise
+
     file_path = MEMORY_DIR / f"{session_id}.json"
+
     if file_path.exists():
-        with open(file_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        with open(file_path, "r", encoding="utf-8") as file:
+            return json.load(file)
+
     return []
 
 
+
+
 def save_conversation(session_id: str, messages: List[Dict]):
-    """Save conversation history to file"""
+    """Save conversation history to local storage or S3."""
+
+    if USE_S3:
+        if not S3_BUCKET:
+            raise RuntimeError("S3_BUCKET is not configured")
+
+        object_key = f"sessions/{session_id}.json"
+
+        s3.put_object(
+            Bucket=S3_BUCKET,
+            Key=object_key,
+            Body=json.dumps(messages, ensure_ascii=False).encode("utf-8"),
+            ContentType="application/json"
+        )
+
+        return
+
     file_path = MEMORY_DIR / f"{session_id}.json"
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(messages, f, indent=2, ensure_ascii=False)
+
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(messages, file, indent=2, ensure_ascii=False)
+
 
 
 # Request/Response models
