@@ -1,4 +1,4 @@
-from mangum import Mangum
+from mangum import Mangum # to help lambda function communicate with FastAPI app
 from server import app
 import boto3
 

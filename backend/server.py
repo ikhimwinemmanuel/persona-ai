@@ -47,15 +47,6 @@ if not USE_S3:
 s3 = boto3.client("s3") if USE_S3 else None
 
 
-# Load personality details
-def load_personality():
-    with open("me.txt", "r", encoding="utf-8") as f:
-        return f.read().strip()
-
-
-PERSONALITY = load_personality()
-
-
 # Memory functions
 
 def load_conversation(session_id: str) -> List[Dict]:
