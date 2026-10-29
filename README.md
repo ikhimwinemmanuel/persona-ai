@@ -28,8 +28,7 @@ The application supplies context to the language model at inference time rather 
 
 ## AWS Architecture
 
-![PersonaAI AWS Architecture](docs/architecture/personaai-architecture.png)
-
+![PersonaAI AWS Architecture](docs/architecture/personaai-architecture.drawio.png)
 
 The Next.js frontend is exported as static files and hosted on Amazon S3. CloudFront delivers the website over HTTPS.
 
