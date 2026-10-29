@@ -1,144 +1,161 @@
+
 # PersonaAI
 
-**A full-stack conversational AI application with persistent conversation memory, built using Next.js, FastAPI, and OpenAI.**
+PersonaAI is a full-stack AI chatbot that answers questions about my professional background, technical skills, experience, and projects.
 
-PersonaAI is a personalised conversational AI application designed to represent an individual through a natural-language interface. It uses structured personality instructions and conversation history to provide context-aware responses across multiple interactions.
+Built with Next.js and FastAPI, the application uses the OpenAI API to generate responses using information provided in JSON, text, and PDF files. Conversation history is stored in Amazon S3, allowing conversations to continue across requests using session IDs.
 
-The project focuses on full-stack AI engineering, conversational memory, API development, and cloud deployment using AWS.
+The application is deployed on AWS, with the frontend hosted on Amazon S3 and delivered through CloudFront, and the FastAPI backend running on AWS Lambda behind API Gateway.
 
-## Features
+**Live Demo:** https://dmevsyg3n8iw3.cloudfront.net
 
-- **Personalised AI conversations** — Uses a configurable personality file to guide responses.
-- **Persistent conversation memory** — Stores conversation history in JSON files and retrieves previous messages using session identifiers.
-- **Session management** — Generates unique session IDs to maintain separate conversation histories.
-- **Interactive chat interface** — Responsive React interface with message history, loading indicators, and automatic scrolling.
-- **REST API** — FastAPI backend with Pydantic request and response validation.
-- **Environment-based configuration** — Separates application settings and API credentials from source code.
+## Walkthrough
 
-## Technology Stack
+<!-- demonstration GIF  -->
 
-| Layer                 | Technologies                              |
-|-----------------------|-------------------------------------------|
-| Frontend              | Next.js, React, TypeScript, Tailwind CSS  |
-| Backend               | Python, FastAPI, Pydantic, Uvicorn        |
-| AI                    | OpenAI API (GPT-4o mini)                  |
-| Memory                | JSON-based file storage                   |
-| Dependency Management | npm, uv                                   |
-| Version Control       | Git, GitHub                               |
+## What the Application Does
 
-## System Architecture
+Visitors can ask PersonaAI about my education, professional experience, technical skills, and software projects.
 
-The current implementation runs locally, with the frontend communicating with the FastAPI backend over HTTP.
+When a message is submitted:
 
-```text
-               User / Browser
-                     |
-                     v
-             Next.js Frontend
-              localhost:3000
-                     |
-                POST /chat
-                     |
-                     v
-              FastAPI Backend
-              localhost:8000
-                     |
-              +------+------+
-              |             |
-              v             v
-         OpenAI API     JSON Memory
-        GPT-4o mini     Local Files
-```
+1. FastAPI retrieves the conversation history associated with the session ID from Amazon S3.
+2. The backend constructs a system prompt using information from JSON, text files, and an extracted resume PDF.
+3. The system prompt, conversation history, and user message are sent to the OpenAI API.
+4. The generated response is returned to the frontend, and the updated conversation is saved to S3.
 
-**Conversation flow:**
+The application supplies context to the language model at inference time rather than fine-tuning the model.
 
-1. The user submits a message through the Next.js interface.
-2. FastAPI identifies the conversation session and retrieves its stored history.
-3. The backend sends the personality instructions, conversation history, and latest message to OpenAI.
-4. The generated response and new message are saved to the session's JSON file.
-5. FastAPI returns the response to the frontend for display.
+## AWS Architecture
 
-Conversation history is stored outside the model and supplied with subsequent requests. This enables contextual conversations without modifying or fine-tuning the underlying model.
+![PersonaAI AWS Architecture](docs/architecture/personaai-architecture.png)
+
+
+The Next.js frontend is exported as static files and hosted on Amazon S3. CloudFront delivers the website over HTTPS.
+
+API Gateway forwards chat requests to AWS Lambda, where Mangum connects the Lambda execution environment to FastAPI.
+
+The backend handles AI requests and stores conversation histories in a separate, private S3 bucket.
+
+## AWS Deployment Screenshots
+
+The following screenshots show the AWS infrastructure used to deploy PersonaAI.
+
+### Amazon CloudFront
+![CloudFront Distribution](docs/screenshots/aws/cloudfront-distribution.png)
+
+### Amazon S3
+![S3 Frontend Hosting](docs/screenshots/aws/s3-frontend.png)
+
+### Amazon API Gateway
+![API Gateway Routes](docs/screenshots/aws/api-gateway.png)
+
+### AWS Lambda
+![Lambda Function](docs/screenshots/aws/lambda-function.png)
+
+
+## Tech Stack
+
+| Component               | Technologies                                   |
+|-------------------------|------------------------------------------------|
+| Frontend                | Next.js, React, TypeScript, Tailwind CSS       |
+| Backend                 | Python, FastAPI, Pydantic, Mangum              |
+| AI                      | OpenAI API (GPT-4o mini)                       |
+| Cloud                   | AWS Lambda, API Gateway, Amazon S3, CloudFront |
+| Development & Packaging | Docker, uv, Git, GitHub                        |
+
+## Deployment and Testing
+
+The FastAPI backend is packaged using Docker to install Linux-compatible Python dependencies before deployment to AWS Lambda.
+
+The following functionality has been tested:
+
+- FastAPI `/health` and `/chat` endpoints running on AWS Lambda.
+- API Gateway integration with the Lambda backend.
+- Reading and writing session-based conversation histories in Amazon S3.
+- Next.js production build and static deployment to Amazon S3.
+- Chat functionality through the CloudFront-hosted frontend.
+- Local and mocked S3 conversation-storage tests.
+
+The application supports local JSON conversation storage for development and Amazon S3 storage when deployed to AWS.
 
 ## Project Structure
 
 ```text
 PersonaAI/
 ├── backend/
-│   ├── me.txt
+│   ├── data/
+│   │   ├── facts.json
+│   │   ├── summary.txt
+│   │   ├── style.txt
+│   │   └── Emmanuel_Resume.pdf
 │   ├── server.py
-│   ├── requirements.txt
+│   ├── context.py
+│   ├── resources.py
+│   ├── lambda_handler.py
+│   ├── deploy.py
+│   ├── test_storage.py
 │   ├── pyproject.toml
 │   └── uv.lock
 ├── frontend/
 │   ├── app/
 │   ├── components/
 │   │   └── twin.tsx
-│   ├── package.json
-│   └── next.config.ts
-├── memory/
+│   ├── next.config.ts
+│   └── package.json
+├── docs/
+│   ├── architecture/
+│   │   └── personaai-architecture.png
+│   └── screenshots/
+│       └── aws/
+│           ├── api-gateway.png
+│           ├── cloudfront-distribution.png
+│           ├── lambda-function.png
+│           └── s3-frontend.png
 ├── .gitignore
 └── README.md
 ```
-
-The `memory/` directory stores local conversation data, which is excluded from version control.
 
 ## Local Development
 
 **Prerequisites:** Python 3.12, Node.js, npm, uv, and an OpenAI API key.
 
-**1. Configure the backend**
+### Backend
 
-Create `backend/.env`:
+Create a `.env` file inside `backend/`:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key
+USE_S3=false
 CORS_ORIGINS=http://localhost:3000
 ```
 
-**2. Start the backend**
-
-From the `backend` directory:
+From the `backend/` directory:
 
 ```bash
 uv sync
 uv run uvicorn server:app --reload
 ```
 
-FastAPI runs at `http://localhost:8000`.
+The API runs at `http://localhost:8000`.
 
-**3. Start the frontend**
+### Frontend
 
-From the `frontend` directory:
+From the `frontend/` directory:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000` to access PersonaAI.
+Open http://localhost:3000.
 
-## Current Validation
-
-The following functionality has been manually tested locally:
-
-- Frontend and backend connectivity
-- OpenAI-generated conversational responses
-- Session-based conversation memory
-- Retrieval of earlier conversation details
-- Local JSON conversation persistence
+**Note:** The frontend currently connects to the deployed API Gateway endpoint. To test against the local backend, change the API URL in `frontend/components/twin.tsx` to `http://localhost:8000/chat`.
 
 ## Current Limitations
 
-- Conversation memory is stored locally rather than in managed cloud storage.
-- Previous messages are included in model requests without a conversation-length limit.
-- The current application has no user authentication.
-- The backend has not yet been deployed to AWS.
+- Conversation sessions are identified using session IDs rather than authenticated user accounts.
+- The public chat endpoint does not yet have comprehensive abuse protection or request throttling.
+- Conversation history is supplied to the model without automatic summarisation or context-window management.
 
-## AWS Deployment
 
-AWS deployment is the next development milestone. The planned architecture uses AWS Lambda, API Gateway, Amazon S3, and Amazon CloudFront.
-
-Deployment architecture, operational configuration, screenshots, and verification results will be documented here as each component is implemented and tested.
-
----
