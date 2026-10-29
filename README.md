@@ -157,5 +157,3 @@ Open http://localhost:3000.
 - Conversation sessions are identified using session IDs rather than authenticated user accounts.
 - The public chat endpoint does not yet have comprehensive abuse protection or request throttling.
 - Conversation history is supplied to the model without automatic summarisation or context-window management.
-
-
