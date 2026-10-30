@@ -5,3 +5,11 @@ node_modules/
 __pycache__/
 memory/*.json
 backend/.lambda-build/
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
