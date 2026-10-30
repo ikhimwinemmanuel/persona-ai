@@ -3,7 +3,7 @@
 
 PersonaAI is a full-stack AI chatbot that answers questions about my professional background, technical skills, experience, and projects.
 
-Built with Next.js and FastAPI, the application uses the OpenAI API to generate responses using information provided in JSON, text, and PDF files. Conversation history is stored in Amazon S3, allowing conversations to continue across requests using session IDs.
+Built with Next.js and FastAPI, the application uses Amazon Bedrock (Nova 2 Lite) to generate responses using information from JSON, text, and PDF files. Conversation history is stored in Amazon S3, allowing conversations to continue across requests using session IDs.
 
 The application is deployed on AWS, with the frontend hosted on Amazon S3 and delivered through CloudFront, and the FastAPI backend running on AWS Lambda behind API Gateway.
 
@@ -21,7 +21,7 @@ When a message is submitted:
 
 1. FastAPI retrieves the conversation history associated with the session ID from Amazon S3.
 2. The backend constructs a system prompt using information from JSON, text files, and an extracted resume PDF.
-3. The system prompt, conversation history, and user message are sent to the OpenAI API.
+3. The system prompt, conversation history, and user message are sent to Amazon Bedrock using the Converse API.
 4. The generated response is returned to the frontend, and the updated conversation is saved to S3.
 
 The application supplies context to the language model at inference time rather than fine-tuning the model.
@@ -59,7 +59,7 @@ The following screenshots show the AWS infrastructure used to deploy PersonaAI.
 |-------------------------|------------------------------------------------|
 | Frontend                | Next.js, React, TypeScript, Tailwind CSS       |
 | Backend                 | Python, FastAPI, Pydantic, Mangum              |
-| AI                      | OpenAI API (GPT-4o mini)                       |
+| AI                      | Amazon Bedrock (Nova 2 Lite), boto3            |
 | Cloud                   | AWS Lambda, API Gateway, Amazon S3, CloudFront |
 | Development & Packaging | Docker, uv, Git, GitHub                        |
 
@@ -117,14 +117,15 @@ PersonaAI/
 
 ## Local Development
 
-**Prerequisites:** Python 3.12, Node.js, npm, uv, and an OpenAI API key.
+**Prerequisites:** Python 3.12, Node.js, npm, uv, AWS CLI, and configured AWS credentials with permission to invoke Amazon Bedrock.
 
 ### Backend
 
 Create a `.env` file inside `backend/`:
 
 ```env
-OPENAI_API_KEY=your_openai_api_key
+DEFAULT_AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=global.amazon.nova-2-lite-v1:0
 USE_S3=false
 CORS_ORIGINS=http://localhost:3000
 ```

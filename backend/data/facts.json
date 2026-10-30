@@ -23,15 +23,27 @@
       "url": "https://ikhimwinemmanuel.github.io/"
     },
     "projects": [
-  {
-    "name": "PersonaAI",
-    "type": "Personalised AI chatbot",
-    "creator": "Ikhimwin Emmanuel",
-    "description": "A full-stack AI assistant developed by Emmanuel to answer questions about his professional background, technical skills, and projects.",
-    "technologies": ["Next.js", "TypeScript", "Python", "FastAPI", "OpenAI API"],
-    "github": "https://github.com/ikhimwinemmanuel/persona-ai",
-    "status": "In development"
-  }
+      {
+        "name": "PersonaAI",
+        "type": "Personalised AI chatbot",
+        "creator": "Ikhimwin Emmanuel",
+        "description": "A full-stack AI assistant that answers questions about Emmanuel's professional background, technical skills, experience, and projects. Deployed on AWS with persistent conversation memory.",
+        "technologies": [
+          "Next.js",
+          "TypeScript",
+          "Python",
+          "FastAPI",
+          "Amazon Bedrock",
+          "Amazon Nova 2 Lite",
+          "AWS Lambda",
+          "API Gateway",
+          "Amazon S3",
+          "Amazon CloudFront"
+        ],
+        "github": "https://github.com/ikhimwinemmanuel/persona-ai",
+        "live_demo": "https://dmevsyg3n8iw3.cloudfront.net",
+        "status": "Deployed"
+      }
 ]
   }
   

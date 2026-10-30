@@ -1,20 +1,16 @@
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
-import os
 from dotenv import load_dotenv
 from typing import Optional, List, Dict
-import json
-import uuid
-from datetime import datetime
 from pathlib import Path
+from botocore.exceptions import ClientError
 from context import prompt
-import boto3 #AWS sdk for python
-from botocore.exceptions import ClientError # Error handling for AWS S3
-
-
-
+import boto3
+import json
+import os
+import uuid
 
 
 # Load environment variables
@@ -27,13 +23,22 @@ origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
-# Initialize OpenAI client
-client = OpenAI()
+# Amazon Bedrock configuration
+BEDROCK_REGION = os.getenv("DEFAULT_AWS_REGION", "us-east-1")
+BEDROCK_MODEL_ID = os.getenv(
+    "BEDROCK_MODEL_ID",
+    "global.amazon.nova-2-lite-v1:0"
+)
+
+bedrock_client = boto3.client(
+    "bedrock-runtime",
+    region_name=BEDROCK_REGION
+)
 
 # Conversation storage configuration
 USE_S3 = os.getenv("USE_S3", "false").lower() == "true"
@@ -48,7 +53,6 @@ s3 = boto3.client("s3") if USE_S3 else None
 
 
 # Memory functions
-
 def load_conversation(session_id: str) -> List[Dict]:
     """Load conversation history from local storage or S3."""
 
@@ -84,8 +88,6 @@ def load_conversation(session_id: str) -> List[Dict]:
     return []
 
 
-
-
 def save_conversation(session_id: str, messages: List[Dict]):
     """Save conversation history to local storage or S3."""
 
@@ -101,7 +103,6 @@ def save_conversation(session_id: str, messages: List[Dict]):
             Body=json.dumps(messages, ensure_ascii=False).encode("utf-8"),
             ContentType="application/json"
         )
-
         return
 
     file_path = MEMORY_DIR / f"{session_id}.json"
@@ -110,8 +111,66 @@ def save_conversation(session_id: str, messages: List[Dict]):
         json.dump(messages, file, indent=2, ensure_ascii=False)
 
 
+# Amazon Bedrock inference
+def call_bedrock(conversation: List[Dict], user_message: str) -> str:
+    """Generate an AI response using Amazon Bedrock Converse API."""
 
-# Request/Response models
+    messages = []
+
+    # Include recent conversation history
+    for msg in conversation[-50:]:
+        messages.append({
+            "role": msg["role"],
+            "content": [{"text": msg["content"]}]
+        })
+
+    # Add the current user message
+    messages.append({
+        "role": "user",
+        "content": [{"text": user_message}]
+    })
+
+    try:
+        response = bedrock_client.converse(
+            modelId=BEDROCK_MODEL_ID,
+            system=[{"text": prompt()}],
+            messages=messages,
+            inferenceConfig={
+                "maxTokens": 2000,
+                "temperature": 0.7,
+                "topP": 0.9
+            }
+        )
+
+        return "".join(
+            block.get("text", "")
+            for block in response["output"]["message"]["content"]
+        )
+
+    except ClientError as error:
+        error_code = error.response["Error"]["Code"]
+
+        print(f"Bedrock invocation failed: {error_code}")
+
+        if error_code == "AccessDeniedException":
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied to the Bedrock model"
+            )
+
+        if error_code == "ValidationException":
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid request to the Bedrock model"
+            )
+
+        raise HTTPException(
+            status_code=502,
+            detail="Bedrock model invocation failed"
+        )
+
+
+# Request / Response models
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
@@ -124,46 +183,46 @@ class ChatResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "PersonaAI API with Memory"}
+    return {
+        "message": "PersonaAI API",
+        "ai_model": BEDROCK_MODEL_ID
+    }
 
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "use_s3": USE_S3,
+        "bedrock_model": BEDROCK_MODEL_ID
+    }
 
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
-        # Generate session ID if not provided
         session_id = request.session_id or str(uuid.uuid4())
 
-        # Load conversation history
+        # Retrieve conversation history
         conversation = load_conversation(session_id)
 
-        # Build messages with history
-        messages = [{"role": "system", "content": prompt()}]
-
-        # Add conversation history
-        for msg in conversation:
-            messages.append(msg)
-
-        # Add current message
-        messages.append({"role": "user", "content": request.message})
-
-        # Call OpenAI API
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages
+        # Generate a response using Amazon Bedrock
+        assistant_response = call_bedrock(
+            conversation,
+            request.message
         )
 
-        assistant_response = response.choices[0].message.content
-
         # Update conversation history
-        conversation.append({"role": "user", "content": request.message})
-        conversation.append({"role": "assistant", "content": assistant_response})
+        conversation.append({
+            "role": "user",
+            "content": request.message
+        })
+        conversation.append({
+            "role": "assistant",
+            "content": assistant_response
+        })
 
-        # Save updated conversation
+        # Persist conversation
         save_conversation(session_id, conversation)
 
         return ChatResponse(
@@ -171,23 +230,41 @@ async def chat(request: ChatRequest):
             session_id=session_id
         )
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as error:
+        print(f"Chat endpoint error: {error}")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to process chat request"
+        )
 
 
 @app.get("/sessions")
 async def list_sessions():
-    """List all conversation sessions"""
+    """List locally stored conversation sessions."""
     sessions = []
+
+    if USE_S3:
+        raise HTTPException(
+            status_code=501,
+            detail="Session listing is not available for S3 storage"
+        )
+
     for file_path in MEMORY_DIR.glob("*.json"):
         session_id = file_path.stem
-        with open(file_path, "r", encoding="utf-8") as f:
-            conversation = json.load(f)
-            sessions.append({
-                "session_id": session_id,
-                "message_count": len(conversation),
-                "last_message": conversation[-1]["content"] if conversation else None
-            })
+
+        with open(file_path, "r", encoding="utf-8") as file:
+            conversation = json.load(file)
+
+        sessions.append({
+            "session_id": session_id,
+            "message_count": len(conversation),
+            "last_message": (
+                conversation[-1]["content"] if conversation else None
+            )
+        })
+
     return {"sessions": sessions}
 
 
