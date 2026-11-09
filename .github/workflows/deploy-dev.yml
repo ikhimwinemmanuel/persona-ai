@@ -91,3 +91,13 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION" \
             --paths "/*"
+      
+      - name: Verify deployed API health
+        run: |
+          curl --fail --silent --show-error \
+            --retry 5 \
+            --retry-delay 3 \
+            --retry-all-errors \
+            "$API_URL/health" | tee health-response.json
+
+          python -c 'import json; data=json.load(open("health-response.json")); assert data["status"] == "healthy", "API health check failed"'
