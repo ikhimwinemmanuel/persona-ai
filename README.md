@@ -8,7 +8,7 @@ Built with Next.js and FastAPI, the application uses Amazon Bedrock (Nova 2 Lite
 The application is deployed on AWS, with the frontend hosted on Amazon S3 and delivered through CloudFront, and the FastAPI backend running on AWS Lambda behind API Gateway.
 The AWS infrastructure is provisioned using Terraform, with remote state stored in Amazon S3. GitHub Actions automates code validation and deployment to AWS using OpenID Connect (OIDC) for secure authentication.
 
-**Live Demo:** https://dmevsyg3n8iw3.cloudfront.net
+**Live Demo:** https://dmevsyg3n8iw3.cloudfront.net 
 
 ## Walkthrough
 
