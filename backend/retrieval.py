@@ -3,13 +3,29 @@ from resources import load_facts, load_summary, load_resume
 import json
 
 
+def format_facts(facts: dict) -> str:
+    """Convert structured facts into readable text."""
+
+    lines = []
+
+    for key, value in facts.items():
+        label = key.replace("_", " ").title()
+
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value, ensure_ascii=False)
+
+        lines.append(f"{label}: {value}")
+
+    return "\n".join(lines)
+
+
 def load_documents() -> list[dict]:
     """Load professional knowledge into searchable documents."""
 
     return [
         {
             "source": "facts.json",
-            "text": json.dumps(load_facts(), ensure_ascii=False),
+            "text": format_facts(load_facts()),
         },
         {
             "source": "summary.txt",

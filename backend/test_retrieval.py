@@ -1,7 +1,19 @@
 
 from retrieval import load_documents
 
+from retrieval import format_facts
 
+
+def test_format_facts():
+    facts = {
+        "full_name": "Ikhimwin Emmanuel",
+        "professional_title": "AI Engineer",
+    }
+
+    result = format_facts(facts)
+
+    assert "Full Name: Ikhimwin Emmanuel" in result
+    assert "Professional Title: AI Engineer" in result
 def test_load_documents():
     documents = load_documents()
 
