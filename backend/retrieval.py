@@ -1,6 +1,8 @@
 
 from resources import load_facts, load_summary, load_resume
 import json
+import faiss
+import numpy as np
 
 
 def format_facts(facts: dict) -> str:
@@ -67,3 +69,31 @@ def chunk_documents(
                 break
 
     return chunks
+
+
+def build_faiss_index(embeddings: list[list[float]]):
+    """Build a FAISS index from document embeddings."""
+
+    vectors = np.asarray(embeddings, dtype=np.float32)
+
+    if vectors.ndim != 2 or len(vectors) == 0:
+        raise ValueError("Embeddings must be a non-empty 2D array")
+
+    index = faiss.IndexFlatIP(vectors.shape[1])
+    index.add(vectors)
+
+    return index
+
+
+def search_faiss(index, query_embedding: list[float], top_k: int = 3):
+    """Find the most similar document vectors."""
+
+    query = np.asarray([query_embedding], dtype=np.float32)
+
+    scores, indices = index.search(query, top_k)
+
+    return [
+        {"index": int(idx), "score": float(score)}
+        for idx, score in zip(indices[0], scores[0])
+        if idx != -1
+    ]
