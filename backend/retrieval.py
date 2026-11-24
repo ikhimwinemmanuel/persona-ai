@@ -3,6 +3,7 @@ from resources import load_facts, load_summary, load_resume
 import json
 import faiss
 import numpy as np
+from pathlib import Path
 
 
 def format_facts(facts: dict) -> str:
@@ -97,3 +98,33 @@ def search_faiss(index, query_embedding: list[float], top_k: int = 3):
         for idx, score in zip(indices[0], scores[0])
         if idx != -1
     ]
+
+def save_faiss_index(index, chunks: list[dict], directory: str):
+    """Save the FAISS index and its associated document chunks."""
+
+    output_dir = Path(directory)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if index.ntotal != len(chunks):
+        raise ValueError("Number of vectors must match number of chunks")
+
+    faiss.write_index(index, str(output_dir / "index.faiss"))
+
+    with open(output_dir / "chunks.json", "w", encoding="utf-8") as file:
+        json.dump(chunks, file, ensure_ascii=False, indent=2)
+
+
+def load_faiss_index(directory: str):
+    """Load a previously saved FAISS index and its document chunks."""
+
+    input_dir = Path(directory)
+
+    index = faiss.read_index(str(input_dir / "index.faiss"))
+
+    with open(input_dir / "chunks.json", "r", encoding="utf-8") as file:
+        chunks = json.load(file)
+
+    if index.ntotal != len(chunks):
+        raise ValueError("FAISS index and document chunks do not match")
+
+    return index, chunks
